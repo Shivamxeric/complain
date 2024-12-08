@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Client, Account, Databases } from "appwrite";
 
 // Appwrite Client setup
@@ -14,6 +14,7 @@ function complain() {
   const [complaints, setComplaints] = useState([]); // Stores complaints fetched from Appwrite
   const [expandedComplaintId, setExpandedComplaintId] = useState(null); // Tracks expanded complaint
   const [deleteComplaintId, setDeleteComplaintId] = useState(null); // Tracks delete menu visibility
+  const menuRef = useRef(null); // Reference to detect outside click
 
   // Fetch complaints from Appwrite
   useEffect(() => {
@@ -53,6 +54,22 @@ function complain() {
   const toggleExpandComplaint = (id) => {
     setExpandedComplaintId((prevId) => (prevId === id ? null : id));
   };
+
+  // Hide delete menu if clicked outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setDeleteComplaintId(null);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+
+    // Cleanup the event listener
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="p-4">
@@ -103,12 +120,12 @@ function complain() {
               <div className="p-4">
                 <h3 className="text-lg font-bold mb-2">{complaint.heading || "Untitled"}</h3>
                 <p className="text-gray-600">
-  {expandedComplaintId === complaint.$id
-    ? complaint.paragraph // Display full description
-    : complaint.paragraph
-    ? `${complaint.paragraph.substring(0, 50)}...`
-    : "No description available."}
-</p>
+                  {expandedComplaintId === complaint.$id
+                    ? complaint.paragraph // Display full description
+                    : complaint.paragraph
+                    ? `${complaint.paragraph.substring(0, 50)}...`
+                    : "No description available."}
+                </p>
               </div>
 
               {/* Three-dot menu */}
@@ -127,6 +144,7 @@ function complain() {
                 {deleteComplaintId === complaint.$id && (
                   <div
                     className="absolute right-0 mt-2 w-32 bg-white border rounded shadow-lg"
+                    ref={menuRef} // Attach ref to detect outside click
                     onClick={(e) => e.stopPropagation()} // Prevent event propagation
                   >
                     <button
